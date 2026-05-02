@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Session {
   id: string;
@@ -11,18 +12,26 @@ interface Session {
   started_at: string;
 }
 
+interface StoredUser {
+  name: string;
+  email: string;
+}
+
 export default function Home() {
+  const router = useRouter();
   const [liveSessions, setLiveSessions] = useState<Session[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
 
   useEffect(() => {
-    // Fetch active sessions on load
+    const stored = localStorage.getItem("shirman_user");
+    if (stored) setUser(JSON.parse(stored));
+
     fetch("/api/sessions/active")
       .then((r) => r.json())
       .then(setLiveSessions)
       .catch(() => {});
 
-    // Connect to SSE for real-time notifications
     const es = new EventSource("/api/notifications/sse");
 
     es.addEventListener("session_started", (e) => {
@@ -40,37 +49,66 @@ export default function Home() {
     return () => es.close();
   }, []);
 
+  function signOut() {
+    localStorage.removeItem("shirman_user");
+    setUser(null);
+    router.refresh();
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Live notification toast */}
       {notification && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-rose-600 text-white px-6 py-3 rounded-full shadow-xl text-sm font-medium animate-bounce">
           {notification}
         </div>
       )}
 
-      {/* Nav */}
       <nav className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
         <span className="text-xl font-bold tracking-tight">
           📻 Shirman<span className="text-rose-500">.fm</span>
         </span>
-        <div className="flex gap-3">
-          <Link
-            href="/register"
-            className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
-          >
-            Sign Up
-          </Link>
-          <Link
-            href="/broadcast"
-            className="px-4 py-2 text-sm rounded-lg bg-rose-600 hover:bg-rose-500 transition-colors font-medium"
-          >
-            Go Live
-          </Link>
+        <div className="flex items-center gap-3">
+          {user ? (
+            <>
+              <span className="text-sm text-zinc-400">Hi, {user.name}</span>
+              <button
+                onClick={signOut}
+                className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
+              >
+                Sign Out
+              </button>
+              <Link
+                href="/broadcast"
+                className="px-4 py-2 text-sm rounded-lg bg-rose-600 hover:bg-rose-500 transition-colors font-medium"
+              >
+                Go Live
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/signin"
+                className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/register"
+                className="px-4 py-2 text-sm rounded-lg border border-zinc-700 hover:border-zinc-500 transition-colors"
+              >
+                Sign Up
+              </Link>
+              <Link
+                href="/broadcast"
+                className="px-4 py-2 text-sm rounded-lg bg-rose-600 hover:bg-rose-500 transition-colors font-medium"
+              >
+                Go Live
+              </Link>
+            </>
+          )}
         </div>
       </nav>
 
-      {/* Hero */}
       <main className="flex-1 px-6 py-12 max-w-4xl mx-auto w-full">
         <div className="text-center mb-12">
           <h1 className="text-4xl sm:text-5xl font-bold tracking-tight mb-4">
@@ -87,16 +125,17 @@ export default function Home() {
             >
               Start Broadcasting
             </Link>
-            <Link
-              href="/register"
-              className="px-6 py-3 border border-zinc-700 hover:border-zinc-500 rounded-xl font-semibold transition-colors"
-            >
-              Get Notified
-            </Link>
+            {!user && (
+              <Link
+                href="/register"
+                className="px-6 py-3 border border-zinc-700 hover:border-zinc-500 rounded-xl font-semibold transition-colors"
+              >
+                Get Notified
+              </Link>
+            )}
           </div>
         </div>
 
-        {/* Live sessions */}
         <div>
           <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse inline-block" />
