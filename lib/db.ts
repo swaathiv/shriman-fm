@@ -1,22 +1,21 @@
-import Database from "better-sqlite3";
+import { createClient } from "@libsql/client";
 import path from "path";
 
-const DB_PATH = path.join(process.cwd(), "shirman.db");
+let client: ReturnType<typeof createClient>;
 
-let db: Database.Database;
-
-export function getDb(): Database.Database {
-  if (!db) {
-    db = new Database(DB_PATH);
-    db.pragma("journal_mode = WAL");
-    db.pragma("foreign_keys = ON");
-    initSchema(db);
+export function getDb() {
+  if (!client) {
+    client = createClient({
+      url: process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), "shirman.db")}`,
+    });
+    initSchema();
   }
-  return db;
+  return client;
 }
 
-function initSchema(db: Database.Database) {
-  db.exec(`
+async function initSchema() {
+  const db = client;
+  await db.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
@@ -32,9 +31,9 @@ function initSchema(db: Database.Database) {
       title TEXT NOT NULL,
       host_name TEXT NOT NULL,
       host_email TEXT NOT NULL,
-      mode TEXT NOT NULL CHECK(mode IN ('audio', 'video')),
+      mode TEXT NOT NULL,
       save_recording INTEGER NOT NULL DEFAULT 0,
-      status TEXT NOT NULL DEFAULT 'live' CHECK(status IN ('live', 'ended')),
+      status TEXT NOT NULL DEFAULT 'live',
       livekit_room TEXT NOT NULL,
       started_at TEXT NOT NULL DEFAULT (datetime('now')),
       ended_at TEXT

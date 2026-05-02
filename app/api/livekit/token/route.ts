@@ -10,16 +10,22 @@ export async function POST(request: Request) {
   }
 
   const db = getDb();
-  const session = db.prepare("SELECT * FROM sessions WHERE id = ?").get(session_id) as { livekit_room: string; status: string } | undefined;
+  const result = await db.execute({
+    sql: "SELECT * FROM sessions WHERE id = ?",
+    args: [session_id],
+  });
 
-  if (!session) {
+  if (result.rows.length === 0) {
     return Response.json({ error: "Session not found" }, { status: 404 });
   }
+
+  const session = result.rows[0] as unknown as { livekit_room: string; status: string };
+
   if (session.status === "ended") {
     return Response.json({ error: "Session has ended" }, { status: 410 });
   }
 
-  const token = await createToken(session.livekit_room, participant_name, !!is_broadcaster);
+  const token = await createToken(session.livekit_room as string, participant_name, !!is_broadcaster);
 
   return Response.json({ token, room: session.livekit_room });
 }

@@ -11,13 +11,17 @@ export async function POST(request: Request) {
 
   const db = getDb();
 
-  db.prepare(`
-    UPDATE sessions SET status = 'ended', ended_at = datetime('now') WHERE id = ?
-  `).run(session_id);
+  await db.execute({
+    sql: `UPDATE sessions SET status = 'ended', ended_at = datetime('now') WHERE id = ?`,
+    args: [session_id],
+  });
 
-  const session = db.prepare("SELECT * FROM sessions WHERE id = ?").get(session_id);
+  const result = await db.execute({
+    sql: "SELECT * FROM sessions WHERE id = ?",
+    args: [session_id],
+  });
 
   broadcast("session_ended", { session_id });
 
-  return Response.json(session);
+  return Response.json(result.rows[0]);
 }

@@ -6,11 +6,17 @@ export async function GET() {
   const from = process.env.TWILIO_WHATSAPP_NUMBER;
 
   if (!sid || !token || !from) {
-    return Response.json({ error: "Twilio env vars missing", sid: !!sid, token: !!token, from: !!from }, { status: 500 });
+    return Response.json(
+      { error: "Twilio env vars missing", sid: !!sid, token: !!token, from: !!from },
+      { status: 500 }
+    );
   }
 
   const db = getDb();
-  const users = db.prepare("SELECT name, phone, notify_whatsapp FROM users WHERE notify_whatsapp = 1 AND phone IS NOT NULL").all() as { name: string; phone: string; notify_whatsapp: number }[];
+  const result = await db.execute(
+    "SELECT name, phone, notify_whatsapp FROM users WHERE notify_whatsapp = 1 AND phone IS NOT NULL"
+  );
+  const users = result.rows as unknown as { name: string; phone: string; notify_whatsapp: number }[];
 
   if (users.length === 0) {
     return Response.json({ error: "No users with WhatsApp opted in" }, { status: 400 });
@@ -33,7 +39,9 @@ export async function GET() {
   const output = results.map((r, i) => ({
     phone: users[i].phone,
     status: r.status,
-    ...(r.status === "fulfilled" ? { sid: r.value.sid } : { error: (r.reason as Error).message }),
+    ...(r.status === "fulfilled"
+      ? { sid: r.value.sid }
+      : { error: (r.reason as Error).message }),
   }));
 
   return Response.json(output);

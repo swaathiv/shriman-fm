@@ -4,8 +4,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   const db = getDb();
-  const sessions = db
-    .prepare("SELECT * FROM sessions WHERE status = 'live' ORDER BY started_at DESC")
-    .all();
-  return Response.json(sessions);
+  const result = await db.execute(
+    "SELECT * FROM sessions WHERE status = 'live' ORDER BY started_at DESC"
+  );
+  return Response.json(result.rows);
 }

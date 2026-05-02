@@ -11,9 +11,12 @@ export async function POST(request: Request) {
 
   const db = getDb();
 
-  const existing = db.prepare("SELECT * FROM users WHERE email = ?").get(email);
-  if (existing) {
-    return Response.json(existing);
+  const existing = await db.execute({
+    sql: "SELECT * FROM users WHERE email = ?",
+    args: [email.trim().toLowerCase()],
+  });
+  if (existing.rows.length > 0) {
+    return Response.json(existing.rows[0]);
   }
 
   const user = {
@@ -25,10 +28,11 @@ export async function POST(request: Request) {
     notify_whatsapp: notify_whatsapp && phone ? 1 : 0,
   };
 
-  db.prepare(`
-    INSERT INTO users (id, name, email, phone, notify_email, notify_whatsapp)
-    VALUES (@id, @name, @email, @phone, @notify_email, @notify_whatsapp)
-  `).run(user);
+  await db.execute({
+    sql: `INSERT INTO users (id, name, email, phone, notify_email, notify_whatsapp)
+          VALUES (?, ?, ?, ?, ?, ?)`,
+    args: [user.id, user.name, user.email, user.phone, user.notify_email, user.notify_whatsapp],
+  });
 
   return Response.json(user, { status: 201 });
 }
