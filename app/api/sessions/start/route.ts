@@ -5,6 +5,8 @@ import { randomUUID } from "crypto";
 import type { User, Session } from "@/lib/db";
 
 export async function POST(request: Request) {
+  console.log("[session/start] request received");
+
   const body = await request.json();
   const { title, host_name, host_email, mode, save_recording } = body;
 
@@ -13,6 +15,8 @@ export async function POST(request: Request) {
   }
 
   const db = await ensureDb();
+  console.log("[session/start] db ready");
+
   const id = randomUUID();
   const roomName = `session-${randomUUID()}`;
 
@@ -27,14 +31,19 @@ export async function POST(request: Request) {
     args: [id],
   });
   const fullSession = sessionResult.rows[0] as unknown as Session;
+  console.log("[session/start] session created:", id);
 
   broadcast("session_started", fullSession);
 
   const usersResult = await db.execute("SELECT * FROM users");
   const users = usersResult.rows as unknown as User[];
+  console.log("[session/start] notifying users:", users.length, "users found");
 
-  sendEmailNotification(users, fullSession).catch((e) => console.error("Email error:", e));
-  sendWhatsAppNotification(users, fullSession).catch((e) => console.error("WhatsApp error:", e));
+  await Promise.all([
+    sendEmailNotification(users, fullSession).catch((e) => console.error("[session/start] Email error:", e)),
+    sendWhatsAppNotification(users, fullSession).catch((e) => console.error("[session/start] WhatsApp error:", e)),
+  ]);
 
+  console.log("[session/start] notifications done");
   return Response.json(fullSession, { status: 201 });
 }
