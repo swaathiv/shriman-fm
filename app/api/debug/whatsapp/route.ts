@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 
 export async function GET() {
   const sid = process.env.TWILIO_ACCOUNT_SID;
@@ -12,7 +12,7 @@ export async function GET() {
     );
   }
 
-  const db = getDb();
+  const db = await ensureDb();
   const result = await db.execute(
     "SELECT name, phone, notify_whatsapp FROM users WHERE notify_whatsapp = 1 AND phone IS NOT NULL"
   );

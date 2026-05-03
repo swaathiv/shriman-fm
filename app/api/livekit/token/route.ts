@@ -1,5 +1,5 @@
 import { createToken } from "@/lib/livekit";
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "session_id and participant_name are required" }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await ensureDb();
   const result = await db.execute({
     sql: "SELECT * FROM sessions WHERE id = ?",
     args: [session_id],

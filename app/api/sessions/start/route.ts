@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 import { broadcast } from "@/lib/sse";
 import { sendEmailNotification, sendWhatsAppNotification } from "@/lib/notify";
 import { randomUUID } from "crypto";
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await ensureDb();
   const id = randomUUID();
   const roomName = `session-${randomUUID()}`;
 

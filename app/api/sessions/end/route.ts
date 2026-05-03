@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 import { broadcast } from "@/lib/sse";
 
 export async function POST(request: Request) {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "session_id is required" }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await ensureDb();
 
   await db.execute({
     sql: `UPDATE sessions SET status = 'ended', ended_at = datetime('now') WHERE id = ?`,

@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 
 export async function POST(request: Request) {
   const { email } = await request.json();
@@ -7,7 +7,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Email is required" }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await ensureDb();
   const result = await db.execute({
     sql: "SELECT * FROM users WHERE email = ?",
     args: [email.trim().toLowerCase()],

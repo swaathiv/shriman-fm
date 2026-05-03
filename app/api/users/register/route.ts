@@ -1,4 +1,4 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 import { randomUUID } from "crypto";
 
 export async function POST(request: Request) {
@@ -9,7 +9,7 @@ export async function POST(request: Request) {
     return Response.json({ error: "Name and email are required" }, { status: 400 });
   }
 
-  const db = getDb();
+  const db = await ensureDb();
 
   const existing = await db.execute({
     sql: "SELECT * FROM users WHERE email = ?",

@@ -2,20 +2,27 @@ import { createClient } from "@libsql/client";
 import path from "path";
 
 let client: ReturnType<typeof createClient>;
+let ready: Promise<void> | null = null;
 
 export function getDb() {
   if (!client) {
     client = createClient({
       url: process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), "shirman.db")}`,
     });
-    initSchema();
+    ready = initSchema();
   }
   return client;
 }
 
+// Call this at the top of every route handler before querying
+export async function ensureDb() {
+  getDb();
+  if (ready) await ready;
+  return client;
+}
+
 async function initSchema() {
-  const db = client;
-  await db.executeMultiple(`
+  await client.executeMultiple(`
     CREATE TABLE IF NOT EXISTS users (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,

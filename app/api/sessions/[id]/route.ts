@@ -1,10 +1,10 @@
-import { getDb } from "@/lib/db";
+import { ensureDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const db = getDb();
+  const db = await ensureDb();
   const result = await db.execute({
     sql: "SELECT * FROM sessions WHERE id = ?",
     args: [id],
