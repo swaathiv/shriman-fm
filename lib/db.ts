@@ -8,6 +8,7 @@ export function getDb() {
   if (!client) {
     client = createClient({
       url: process.env.DATABASE_URL ?? `file:${path.join(process.cwd(), "shirman.db")}`,
+      authToken: process.env.DATABASE_AUTH_TOKEN,
     });
     ready = initSchema();
   }
