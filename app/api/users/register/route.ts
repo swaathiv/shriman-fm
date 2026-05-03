@@ -1,5 +1,6 @@
-import { ensureDb } from "@/lib/db";
+import { ensureDb, toObj } from "@/lib/db";
 import { randomUUID } from "crypto";
+import type { User } from "@/lib/db";
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -11,16 +12,14 @@ export async function POST(request: Request) {
 
   const db = await ensureDb();
 
-  const existing = await db.execute({
-    sql: "SELECT * FROM users WHERE email = ?",
-    args: [email.trim().toLowerCase()],
-  });
+  const existing = await db.execute({ sql: "SELECT * FROM users WHERE email = ?", args: [email.trim().toLowerCase()] });
   if (existing.rows.length > 0) {
-    return Response.json(existing.rows[0]);
+    return Response.json(toObj<User>(existing));
   }
 
+  const id = randomUUID();
   const user = {
-    id: randomUUID(),
+    id,
     name: name.trim(),
     email: email.trim().toLowerCase(),
     phone: phone?.trim() || null,
@@ -29,8 +28,7 @@ export async function POST(request: Request) {
   };
 
   await db.execute({
-    sql: `INSERT INTO users (id, name, email, phone, notify_email, notify_whatsapp)
-          VALUES (?, ?, ?, ?, ?, ?)`,
+    sql: `INSERT INTO users (id, name, email, phone, notify_email, notify_whatsapp) VALUES (?, ?, ?, ?, ?, ?)`,
     args: [user.id, user.name, user.email, user.phone, user.notify_email, user.notify_whatsapp],
   });
 

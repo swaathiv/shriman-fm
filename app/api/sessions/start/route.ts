@@ -1,4 +1,4 @@
-import { ensureDb } from "@/lib/db";
+import { ensureDb, toObj, toRows } from "@/lib/db";
 import { broadcast } from "@/lib/sse";
 import { sendEmailNotification, sendWhatsAppNotification } from "@/lib/notify";
 import { randomUUID } from "crypto";
@@ -26,17 +26,14 @@ export async function POST(request: Request) {
     args: [id, title.trim(), host_name.trim(), host_email.trim().toLowerCase(), mode, save_recording ? 1 : 0, roomName],
   });
 
-  const sessionResult = await db.execute({
-    sql: "SELECT * FROM sessions WHERE id = ?",
-    args: [id],
-  });
-  const fullSession = sessionResult.rows[0] as unknown as Session;
+  const sessionResult = await db.execute({ sql: "SELECT * FROM sessions WHERE id = ?", args: [id] });
+  const fullSession = toObj<Session>(sessionResult);
   console.log("[session/start] session created:", id);
 
   broadcast("session_started", fullSession);
 
   const usersResult = await db.execute("SELECT * FROM users");
-  const users = usersResult.rows as unknown as User[];
+  const users = toRows<User>(usersResult);
   console.log("[session/start] notifying users:", users.length, "users found");
 
   await Promise.all([

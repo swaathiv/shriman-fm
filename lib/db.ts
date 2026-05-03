@@ -49,6 +49,17 @@ async function initSchema() {
   `);
 }
 
+// Convert a libsql Row to a plain serializable object
+export function toObj<T>(result: { rows: import("@libsql/client").Row[]; columns: string[] }, index = 0): T {
+  return Object.fromEntries(
+    result.columns.map((col, i) => [col, result.rows[index][i]])
+  ) as T;
+}
+
+export function toRows<T>(result: { rows: import("@libsql/client").Row[]; columns: string[] }): T[] {
+  return result.rows.map((_, i) => toObj<T>(result, i));
+}
+
 export interface User {
   id: string;
   name: string;
